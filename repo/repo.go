@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 
 	"github.com/towoe/gclone/git"
 )
@@ -23,6 +24,7 @@ type directoryContent struct {
 	valid   bool
 	status  git.RepoStatus
 	Remotes []remote `json:"remotes"`
+	name    string
 }
 
 type Register struct {
@@ -181,13 +183,29 @@ func (r *Register) listRemotes() {
 }
 
 func (r *Register) setStatus() {
+	var wg sync.WaitGroup
+	res := make(chan directoryContent, len(r.Repos))
 	for k, v := range r.Repos {
-		st, err := git.Status(k)
-		if err == nil {
-			v.status = st
-			v.valid = true
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, dir string, old directoryContent, status chan directoryContent) {
+			st, err := git.Status(dir)
+			old.name = dir
+			if err == nil {
+				old.status = st
+				old.valid = true
+			}
+			wg.Done()
+			status <- old
+		}(&wg, k, v, res)
+	}
+	wg.Wait()
+	close(res)
+	for {
+		v1, ok := <-res
+		if !ok {
+			break
 		}
-		r.Repos[k] = v
+		r.Repos[v1.name] = v1
 	}
 }
 

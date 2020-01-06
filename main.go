@@ -31,6 +31,7 @@ var (
 
 func main() {
 	flag.Parse()
+
 	registry := repo.CurrentRegister(*indexFile)
 
 	if *fetch {
