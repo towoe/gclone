@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"os"
 	"regexp"
 
 	"github.com/towoe/gclone/repo"
@@ -30,12 +29,9 @@ func main() {
 		urlExp, _ := regexp.Compile("^(git|http).*")
 		// Decide if argument is address for cloning or a local path to add
 		if urlExp.MatchString(flag.Arg(0)) {
-			dest, _ := os.Getwd()
-			if flag.NArg() > 1 {
-				// Use second argument as clone destination
-				dest = flag.Arg(1)
-			}
-			registry.Clone(flag.Arg(0), dest)
+			// Use second argument as clone destination. Will be an
+			// empty string if no second argument is provided
+			registry.Clone(flag.Arg(0), flag.Arg(1))
 		} else {
 			registry.Add(flag.Arg(0))
 		}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/towoe/gclone/git"
@@ -108,6 +109,13 @@ func (r *Register) Clone(url string, destDir string) error {
 	err := c.Run()
 	if err != nil {
 		return err
+	}
+	if destDir == "" {
+		// get the last path element from the URL
+		urlWithoutSlash := strings.TrimRight(url, "/")
+		urlWithoutGit := strings.TrimSuffix(urlWithoutSlash, ".git")
+		k := strings.Split(urlWithoutGit, "/")
+		destDir = k[len(k)-1]
 	}
 	err = r.Add(destDir)
 	if err != nil {
