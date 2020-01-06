@@ -93,11 +93,12 @@ func (r *Register) remove(rep repo) {
 }
 
 func (r *Register) Fetch(options string) error {
-	// TODO: parallel fetch
 	for k := range r.Repos {
-		fmt.Println("Fetching: ", k)
-		c := git.NewFetch(k, options)
-		c.Run()
+		go func(k string, options string) {
+			fmt.Println("Fetching: ", k)
+			c := git.NewFetch(k, options)
+			c.Run()
+		}(k, options)
 	}
 	return nil
 }
