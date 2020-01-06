@@ -94,7 +94,7 @@ func (r *Register) remove(rep repo) {
 
 func (r *Register) Fetch(options string) error {
 	for k := range r.Repos {
-		go func(k string, options string) {
+		func(k string, options string) {
 			fmt.Println("Fetching: ", k)
 			c := git.NewFetch(k, options)
 			c.Run()
