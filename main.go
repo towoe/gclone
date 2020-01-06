@@ -8,18 +8,6 @@ import (
 	"github.com/towoe/gclone/repo"
 )
 
-// Usage
-// gclone https://github.com/user/repo [folder]
-// 	- clone to [folder] or ./repo
-// gclone path/to/folder
-// 	- print status for folder OR
-// 	- add folder to index
-// gclone
-// 	- print index
-
-// Options
-// indexFile
-
 var (
 	indexFile = flag.String("index", "", "Path to file containg the index")
 	listOrder = flag.String("list", "dir", "Sort the list by: \"dir\", "+
