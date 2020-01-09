@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/towoe/gclone/git"
 )
@@ -192,24 +191,19 @@ func (r *Register) listRemotes() {
 }
 
 func (r *Register) setStatus() {
-	var wg sync.WaitGroup
 	res := make(chan directoryContent, len(r.Repos))
 	for k, v := range r.Repos {
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, dir string, old directoryContent, status chan directoryContent) {
+		go func(dir string, old directoryContent, status chan directoryContent) {
 			st, err := git.Status(dir)
 			old.name = dir
 			if err == nil {
 				old.status = st
 				old.valid = true
 			}
-			wg.Done()
 			status <- old
-		}(&wg, k, v, res)
+		}(k, v, res)
 	}
-	wg.Wait()
-	close(res)
-	for {
+	for range r.Repos {
 		v1, ok := <-res
 		if !ok {
 			break
