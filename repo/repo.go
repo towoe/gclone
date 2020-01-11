@@ -156,7 +156,7 @@ func (r *Register) listDirs() {
 	for _, dir := range sortedDirs {
 		dirContent := r.Repos[dir]
 		if dirContent.valid {
-			fmt.Printf("%s: %s\tRemotes: ", dir, dirContent.status)
+			fmt.Printf("%s: %s\tRemotes: ", substitueWithTilde(dir), dirContent.status)
 			for k, remote := range dirContent.Remotes {
 				// TODO function for getting the status assembled
 				// 	in a dynamic way
