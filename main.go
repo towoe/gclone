@@ -20,6 +20,7 @@ func main() {
 	flag.Parse()
 
 	registry := repo.CurrentRegister(*indexFile)
+	registry.LoadRemotes()
 
 	if *fetch {
 		registry.Fetch(*fetchOptions)

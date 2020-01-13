@@ -1,7 +1,9 @@
 package repo
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,19 +13,19 @@ import (
 )
 
 type remote struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	name string
+	url  string
 }
 
 type repo struct {
-	Remotes   []remote `json:"remotes"`
-	Directory string   `json:"directory"`
+	remotes   []remote
+	Directory string `json:"directory"`
 }
 
 type directoryContent struct {
 	valid   bool
 	status  git.RepoStatus
-	Remotes []remote `json:"remotes"`
+	remotes []remote
 	name    string
 }
 
@@ -34,6 +36,10 @@ type Register struct {
 var (
 	_currentRegister     *Register
 	_storageFileRegister string
+)
+
+var (
+	ErrNotAGitDir = errors.New("No git structure found in directory")
 )
 
 func getStorageFile(storageFile string) string {
@@ -65,6 +71,37 @@ func CurrentRegister(storageFile string) *Register {
 	return _currentRegister
 }
 
+// LoadRemotes load the remotes of a repository into the loaded data structure
+func (r *Register) LoadRemotes() {
+	for k := range r.Repos {
+		d, err := getRemotes(k)
+		if err == ErrNotAGitDir {
+			log.Println("Error checking for remotes.", err, k)
+		} else if err != nil {
+			log.Fatalln(err)
+		}
+		r.Repos[k] = d
+	}
+}
+
+// Store writes the current entries of r.Repo to the storage file
+func (r *Register) Store() {
+	newConfigService().Store(r, _storageFileRegister)
+}
+
+func getRemotes(gitDir string) (directoryContent, error) {
+
+	remotes, err := git.ExtractFetchRemotes(gitDir)
+	if err != nil {
+		return directoryContent{valid: false}, ErrNotAGitDir
+	}
+	dirRemotes := make([]remote, 0)
+	for name, url := range remotes {
+		dirRemotes = append(dirRemotes, remote{name: name, url: url})
+	}
+	return directoryContent{valid: true, remotes: dirRemotes}, nil
+}
+
 // TODO error
 func (r *Register) Add(gitDir string) error {
 	gitDir, err := filepath.Abs(gitDir)
@@ -72,19 +109,12 @@ func (r *Register) Add(gitDir string) error {
 		return err
 	}
 
-	remotes, err := git.ExtractFetchRemotes(gitDir)
+	d, err := getRemotes(gitDir)
 	if err != nil {
 		return err
 	}
-	dirRemotes := make([]remote, 0)
-	for name, url := range remotes {
-		dirRemotes = append(dirRemotes, remote{Name: name, URL: url})
-	}
 	fmt.Println("Adding ", gitDir)
-	r.Repos[gitDir] = directoryContent{
-		valid:   true,
-		Remotes: dirRemotes,
-	}
+	r.Repos[gitDir] = d
 	newConfigService().Store(r, _storageFileRegister)
 	return nil
 }
@@ -157,17 +187,17 @@ func (r *Register) listDirs() {
 		dirContent := r.Repos[dir]
 		if dirContent.valid {
 			fmt.Printf("%s: %s\tRemotes: ", substitueWithTilde(dir), dirContent.status)
-			for k, remote := range dirContent.Remotes {
+			for k, remote := range dirContent.remotes {
 				// TODO function for getting the status assembled
 				// 	in a dynamic way
-				stRemote := git.StatusRemote(dir, remote.Name)
+				stRemote := git.StatusRemote(dir, remote.name)
 				fmt.Printf("%s: %s",
-					remote.Name, stRemote)
-				if k < len(dirContent.Remotes)-1 {
+					remote.name, stRemote)
+				if k < len(dirContent.remotes)-1 {
 					fmt.Printf(", ")
 				}
 			}
-			if len(dirContent.Remotes) == 0 {
+			if len(dirContent.remotes) == 0 {
 				fmt.Print("none set")
 			}
 		} else {
@@ -180,8 +210,8 @@ func (r *Register) listDirs() {
 }
 
 func (r *Register) listRemotes() {
-	for URL, dirs := range r.createRemoteList() {
-		fmt.Println(URL)
+	for url, dirs := range r.createRemoteList() {
+		fmt.Println(url)
 		for _, dir := range dirs {
 			st, _ := git.Status(dir)
 			fmt.Printf("%s:\t%s\n", st, dir)
@@ -216,8 +246,8 @@ func (r *Register) createRemoteList() map[string][]string {
 	// TODO: handle repos without remotes
 	repoList := make(map[string][]string)
 	for d, repo := range r.Repos {
-		for _, remote := range repo.Remotes {
-			repoList[remote.URL] = append(repoList[remote.URL], d)
+		for _, remote := range repo.remotes {
+			repoList[remote.url] = append(repoList[remote.url], d)
 		}
 	}
 	return repoList
