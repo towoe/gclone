@@ -44,4 +44,5 @@ func main() {
 		// Print list of entries
 		r.List(sort)
 	}
+	r.Store()
 }
