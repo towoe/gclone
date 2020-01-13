@@ -168,6 +168,7 @@ func (r *Register) List(s ListSort) {
 	} else if s == Remote {
 		r.listRemotes()
 	}
+	r.removeInvalidEntries(DeleteAsk)
 }
 
 func (r *Register) getSortedKeys() []string {
@@ -178,6 +179,29 @@ func (r *Register) getSortedKeys() []string {
 	}
 	sort.Strings(dirs)
 	return dirs
+}
+
+type DeleteMethod int
+
+const (
+	DeleteAll DeleteMethod = iota
+	DeleteAsk
+)
+
+func (r *Register) removeInvalidEntries(m DeleteMethod) {
+	for k, v := range r.Repos {
+		if !v.valid {
+			if m == DeleteAsk {
+				fmt.Printf("Delete [%v] from the storage file [Yn] ", v.name)
+				var ans string = "Y"
+				fmt.Scanf("%s", &ans)
+				if !(strings.HasPrefix(ans, "y") || strings.HasPrefix(ans, "Y")) {
+					continue
+				}
+			}
+			r.remove(k)
+		}
+	}
 }
 
 func (r *Register) listDirs() {
@@ -201,13 +225,9 @@ func (r *Register) listDirs() {
 			if len(dirContent.remotes) == 0 {
 				fmt.Print("none set")
 			}
-		} else {
-			// TODO: collect all entries and handle after the loop
-			fmt.Println("Could not validate: ", dir)
+			fmt.Println()
 		}
-		fmt.Println()
 	}
-	// TODO: add option to remove invalid entriies
 }
 
 func (r *Register) listRemotes() {
