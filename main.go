@@ -19,11 +19,11 @@ var (
 func main() {
 	flag.Parse()
 
-	registry := repo.CurrentRegister(*indexFile)
-	registry.LoadRemotes()
+	r := repo.CurrentRegister(*indexFile)
+	r.LoadRemotes()
 
 	if *fetch {
-		registry.Fetch(*fetchOptions)
+		r.Fetch(*fetchOptions)
 	}
 
 	if flag.NArg() > 0 {
@@ -32,9 +32,9 @@ func main() {
 		if urlExp.MatchString(flag.Arg(0)) {
 			// Use second argument as clone destination. Will be an
 			// empty string if no second argument is provided
-			registry.Clone(flag.Arg(0), flag.Arg(1))
+			r.Clone(flag.Arg(0), flag.Arg(1))
 		} else {
-			registry.Add(flag.Arg(0))
+			r.Add(flag.Arg(0))
 		}
 	} else {
 		sort := repo.Directory
@@ -42,6 +42,6 @@ func main() {
 			sort = repo.Remote
 		}
 		// Print list of entries
-		registry.List(sort)
+		r.List(sort)
 	}
 }
