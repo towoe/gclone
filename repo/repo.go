@@ -119,7 +119,8 @@ func (r *Register) Add(gitDir string) error {
 	return nil
 }
 
-func (r *Register) remove(rep repo) {
+func (r *Register) remove(gitDir string) {
+	delete(r.Repos, gitDir)
 }
 
 func (r *Register) Fetch(options string) error {
