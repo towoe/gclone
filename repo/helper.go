@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func substitueWithTilde(dir string) string {
+func substituteWithTilde(dir string) string {
 	u, _ := user.Current()
 	if strings.HasPrefix(dir, u.HomeDir) {
 		return strings.Replace(dir, u.HomeDir, "~", 1)
