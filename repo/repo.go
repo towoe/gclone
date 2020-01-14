@@ -25,7 +25,7 @@ type directoryContent struct {
 	valid   bool
 	status  git.RepoStatus
 	remotes []remote
-	name    string
+	dirName string
 }
 
 type Register struct {
@@ -191,7 +191,7 @@ func (r *Register) removeInvalidEntries(m DeleteMethod) {
 	for k, v := range r.Repos {
 		if !v.valid {
 			if m == DeleteAsk {
-				fmt.Printf("Delete [%v] from the storage file [Yna] ", v.name)
+				fmt.Printf("Delete [%v] from the storage file [Yna] ", v.dirName)
 				var ans string = "Y"
 				fmt.Scanf("%s", &ans)
 				if strings.HasPrefix(ans, "a") {
@@ -247,7 +247,7 @@ func (r *Register) setStatus() {
 	for k, v := range r.Repos {
 		go func(dir string, old directoryContent, status chan directoryContent) {
 			st, err := git.Status(dir)
-			old.name = dir
+			old.dirName = dir
 			if err == nil {
 				old.status = st
 				old.valid = true
@@ -260,7 +260,7 @@ func (r *Register) setStatus() {
 		if !ok {
 			break
 		}
-		r.Repos[v1.name] = v1
+		r.Repos[v1.dirName] = v1
 	}
 }
 
