@@ -13,12 +13,9 @@ import (
 )
 
 type remote struct {
-	name string
-	url  string
-}
-
-type repo struct {
-	remotes []remote
+	name   string
+	url    string
+	status git.RepoRemoteDiff
 }
 
 type directoryContent struct {
@@ -162,6 +159,7 @@ const (
 
 func (r *Register) List(s ListSort) {
 	r.setStatus()
+	r.updateRemotestatus()
 	if s == Directory {
 		r.listDirs()
 	} else if s == Remote {
@@ -205,20 +203,25 @@ func (r *Register) removeInvalidEntries(m DeleteMethod) {
 	}
 }
 
+func (r *Register) updateRemotestatus() {
+	for k, v := range r.Repos {
+		if v.valid {
+			for n, remote := range v.remotes {
+				r.Repos[k].remotes[n].status =
+					git.StatusRemote(v.dirName, remote.name)
+			}
+		}
+	}
+}
+
 func (r *Register) listDirs() {
-
-	sortedDirs := r.getSortedKeys()
-
-	for _, dir := range sortedDirs {
+	for _, dir := range r.getSortedKeys() {
 		dirContent := r.Repos[dir]
 		if dirContent.valid {
 			fmt.Printf("%s: %s\tRemotes: ", substituteWithTilde(dir), dirContent.status)
 			for k, remote := range dirContent.remotes {
-				// TODO function for getting the status assembled
-				// 	in a dynamic way
-				stRemote := git.StatusRemote(dir, remote.name)
 				fmt.Printf("%s: %s",
-					remote.name, stRemote)
+					remote.name, remote.status)
 				if k < len(dirContent.remotes)-1 {
 					fmt.Printf(", ")
 				}
