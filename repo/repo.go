@@ -18,8 +18,7 @@ type remote struct {
 }
 
 type repo struct {
-	remotes   []remote
-	Directory string `json:"directory"`
+	remotes []remote
 }
 
 type directoryContent struct {
