@@ -167,14 +167,14 @@ func (r *Register) List(s ListSort) {
 	}
 }
 
-func (r *Register) getSortedKeys() []string {
-	// Sort the output based on the directory path
-	var dirs []string
-	for d := range r.Repos {
-		dirs = append(dirs, d)
+// use an argument with a pointer and create the slice for different maps
+func sortedKeys(m *map[string]directoryContent) []string {
+	var l []string
+	for k := range *m {
+		l = append(l, k)
 	}
-	sort.Strings(dirs)
-	return dirs
+	sort.Strings(l)
+	return l
 }
 
 type DeleteMethod int
@@ -216,7 +216,7 @@ func (r *Register) updateRemotestatus() {
 }
 
 func (r *Register) listDirs() {
-	for _, dir := range r.getSortedKeys() {
+	for _, dir := range sortedKeys(&r.Repos) {
 		dirContent := r.Repos[dir]
 		if dirContent.valid {
 			fmt.Printf("%s: %s\tRemotes: ", substituteWithTilde(dir), dirContent.status)
