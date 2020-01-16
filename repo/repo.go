@@ -150,25 +150,18 @@ func (r *Register) Clone(url string, destDir string) error {
 	return nil
 }
 
-type ListSort int
-
-const (
-	Directory ListSort = iota
-	Remote
-)
-
-func (r *Register) List(s ListSort) {
-	r.setStatus()
-	r.updateRemotestatus()
-	if s == Directory {
-		r.listDirs()
-	} else if s == Remote {
-		r.listRemotes()
+// use an argument with a pointer and create the slice for different maps
+func sortedKeysContent(m *map[string]directoryContent) []string {
+	var l []string
+	for k := range *m {
+		l = append(l, k)
 	}
+	sort.Strings(l)
+	return l
 }
 
-// use an argument with a pointer and create the slice for different maps
-func sortedKeys(m *map[string]directoryContent) []string {
+// TODO How to use the same signature as in sortedKeysContent
+func sortedKeysString(m *map[string][]directoryContent) []string {
 	var l []string
 	for k := range *m {
 		l = append(l, k)
@@ -215,8 +208,25 @@ func (r *Register) updateRemotestatus() {
 	}
 }
 
-func (r *Register) listDirs() {
-	for _, dir := range sortedKeys(&r.Repos) {
+type ListSort int
+
+const (
+	Directory ListSort = iota
+	Remote
+)
+
+func (r *Register) List(s ListSort) {
+	r.setStatus()
+	r.updateRemotestatus()
+	if s == Directory {
+		r.listByDirs()
+	} else if s == Remote {
+		r.listByRemotes()
+	}
+}
+
+func (r *Register) listByDirs() {
+	for _, dir := range sortedKeysContent(&r.Repos) {
 		dirContent := r.Repos[dir]
 		if dirContent.valid {
 			fmt.Printf("%s: %s\tRemotes: ", substituteWithTilde(dir), dirContent.status)
@@ -235,14 +245,14 @@ func (r *Register) listDirs() {
 	}
 }
 
-func (r *Register) listRemotes() {
-	for url, dirs := range r.createRemoteList() {
-		fmt.Println(url)
-		for _, dir := range dirs {
-			st, _ := git.Status(dir)
-			fmt.Printf("%s:\t%s\n", st, dir)
+func (r *Register) listByRemotes() {
+	m := r.mapRemotes()
+	for _, url := range sortedKeysString(&m) {
+		dirCont := m[url]
+		fmt.Printf("%s:\t", url)
+		for _, d := range dirCont {
+			fmt.Printf("%s: %s\n", substituteWithTilde(d.dirName), d.status)
 		}
-		fmt.Println()
 	}
 }
 
@@ -266,6 +276,21 @@ func (r *Register) setStatus() {
 		}
 		r.Repos[v1.dirName] = v1
 	}
+}
+
+// iterate over all entries and just create a dumb slice
+func (r *Register) mapRemotes() map[string][]directoryContent {
+	rem := make(map[string][]directoryContent)
+	for _, dirCont := range r.Repos {
+		for _, remote := range dirCont.remotes {
+			val, ok := rem[remote.url]
+			if !ok {
+				val = make([]directoryContent, 0)
+			}
+			rem[remote.url] = append(val, dirCont)
+		}
+	}
+	return rem
 }
 
 func (r *Register) createRemoteList() map[string][]string {
