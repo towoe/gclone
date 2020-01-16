@@ -44,5 +44,6 @@ func main() {
 		// Print list of entries
 		r.List(sort)
 	}
+	r.RemoveInvalidEntries(repo.DeleteAll)
 	r.Store()
 }

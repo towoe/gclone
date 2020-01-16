@@ -165,7 +165,6 @@ func (r *Register) List(s ListSort) {
 	} else if s == Remote {
 		r.listRemotes()
 	}
-	r.removeInvalidEntries(DeleteAsk)
 }
 
 func (r *Register) getSortedKeys() []string {
@@ -185,7 +184,9 @@ const (
 	DeleteAsk
 )
 
-func (r *Register) removeInvalidEntries(m DeleteMethod) {
+// RemoveInvalidEntries remove entries which are not marked valid from the
+// storage
+func (r *Register) RemoveInvalidEntries(m DeleteMethod) {
 	for k, v := range r.Repos {
 		if !v.valid {
 			if m == DeleteAsk {
