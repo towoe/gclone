@@ -21,13 +21,13 @@ go get github.com/towoe/gclone
 Cloning a new repository adds it directly to the register.
 
 ```console
-$ gclone clone https://github.com/user/repo [folder]
+gclone clone https://github.com/user/repo [folder]
 ```
 
 Add a repository which is already locally available.
 
 ```console
-$ gclone add path/to/folder
+gclone add path/to/folder
 ```
 
 ### Print the status
@@ -36,8 +36,8 @@ Invoking `gclone` without any arguments will print the status for each
 registered repository. The command `status` can also be used.
 
 ```console
-$ gclone
-$ gclone status
+gclone
+gclone status
 ```
 
 ### Updating all repositories
@@ -47,7 +47,7 @@ repository. No `pull` is performed as this includes a merge, which might lead
 to an unintended state.
 
 ```console
-$ glcone fetch
+glcone fetch
 ```
 
 ### Index file
