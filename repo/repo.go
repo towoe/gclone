@@ -67,7 +67,8 @@ func CurrentRegister(storageFile string) *Register {
 	return _currentRegister
 }
 
-// LoadRemotes load the remotes of a repository into the loaded data structure
+// LoadRemotes looks up the currently available remotes of a repository
+// (direcotry) and adds them to the Register
 func (r *Register) LoadRemotes() {
 	for k := range r.Repos {
 		d, err := getRemotes(k)
@@ -215,13 +216,13 @@ const (
 	Remote
 )
 
-func (r *Register) List(s ListSort) {
+func (r *Register) List(s string) {
 	r.setStatus()
 	r.updateRemotestatus()
-	if s == Directory {
-		r.listByDirs()
-	} else if s == Remote {
+	if s == "remote" {
 		r.listByRemotes()
+	} else {
+		r.listByDirs()
 	}
 }
 

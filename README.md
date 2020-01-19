@@ -18,35 +18,36 @@ go get github.com/towoe/gclone
 
 ### Register a repository
 
-Clone a repository. This acts like a normal `git clone`.
+Cloning a new repository adds it directly to the register.
 
 ```console
-$ gclone https://github.com/user/repo [folder]
+$ gclone clone https://github.com/user/repo [folder]
 ```
 
 Add a repository which is already locally available.
 
 ```console
-$ gclone path/to/folder
+$ gclone add path/to/folder
 ```
 
 ### Print the status
 
 Invoking `gclone` without any arguments will print the status for each
-registered repository.
+registered repository. The command `status` can also be used.
 
 ```console
 $ gclone
+$ gclone status
 ```
 
 ### Updating all repositories
 
-Adding the argument `-fetch` will perform a normal `git fetch` for each
+Adding the argument `fetch` will perform a normal `git fetch` for each
 repository. No `pull` is performed as this includes a merge, which might lead
 to an unintended state.
 
 ```console
-$ glcone -fetch
+$ glcone fetch
 ```
 
 ### Index file
@@ -54,6 +55,6 @@ $ glcone -fetch
 The default storage location for the index file is
 `$XDG_DATA_HOME/gclone/register.json`.
 
-The argument `-index` can be supplied to use a different file.
+The argument `-i, --index` can be supplied to use a different file.
 It **must** be given prior to additional arguments (path or URL).
 This can be useful in order to group several repositories together.
