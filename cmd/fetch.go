@@ -25,9 +25,11 @@ var fetchCmd = &cobra.Command{
 		var argsNoHelp []string
 		// TODO remove this hack after parsing stops for non declared arguments
 		for _, a := range args {
-			if !(strings.Compare("-h", a) == 0 || strings.Compare("--help", a) == 0) {
-				argsNoHelp = append(argsNoHelp, a)
+			if strings.Compare("-h", a) == 0 || strings.Compare("--help", a) == 0 {
+				cmd.Help()
+				return
 			}
+			argsNoHelp = append(argsNoHelp, a)
 		}
 		r.Fetch(strings.Join(argsNoHelp, " "))
 	},
