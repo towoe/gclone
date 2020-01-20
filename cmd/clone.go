@@ -18,6 +18,10 @@ var cloneCmd = &cobra.Command{
 		i, _ := cmd.Flags().GetString("index")
 		r := repo.CurrentRegister(i)
 		r.LoadRemotes()
-		r.Clone(args[0], args[1])
+		dest := ""
+		if len(args) >= 2 {
+			dest = args[1]
+		}
+		r.Clone(args[0], dest)
 	},
 }
