@@ -26,6 +26,6 @@ func status(cmd *cobra.Command, args []string) {
 	r.LoadRemotes()
 	l, _ := cmd.Flags().GetString("list")
 	r.List(l)
-	r.RemoveInvalidEntries(repo.DeleteAll)
+	r.RemoveInvalidEntries(repo.DeleteAsk)
 	r.Store()
 }
