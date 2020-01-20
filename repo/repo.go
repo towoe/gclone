@@ -184,10 +184,12 @@ func (r *Register) RemoveInvalidEntries(m DeleteMethod) {
 	for k, v := range r.Repos {
 		if !v.valid {
 			if m == DeleteAsk {
-				fmt.Printf("Delete [%v] from the storage file [Yna] ", v.dirName)
+				fmt.Printf("Delete [%v] from the storage file [Y/n/a/q] ", v.dirName)
 				var ans string = "Y"
 				fmt.Scanf("%s", &ans)
-				if strings.HasPrefix(ans, "a") {
+				if strings.HasPrefix(ans, "q") {
+					break
+				} else if strings.HasPrefix(ans, "a") {
 					m = DeleteAll
 				} else if !(strings.HasPrefix(ans, "y") || strings.HasPrefix(ans, "Y")) {
 					continue
