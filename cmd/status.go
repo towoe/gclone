@@ -11,9 +11,10 @@ func init() {
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Print the status for each entry.",
-	Long:  "Print the status for each entry. By default the list is sorted by directories.",
-	Run:   status,
+	Short: "Print the entries statuses",
+	Long: "Print the status for each entry of the storage file.\n" +
+		"By default the list is sorted by directories.\n",
+	Run: status,
 }
 
 func init() {

@@ -13,8 +13,12 @@ func init() {
 
 var fetchCmd = &cobra.Command{
 	Use:   "fetch",
-	Short: "Perform a fetch for each entry in the storage file.",
-	Long:  "For each entry a 'git fetch' is executed. Additional arguments are forwarded to 'git fetch'",
+	Short: "Download updates",
+	Long: "Download updates for each entry of the storage file.\n" +
+		"This will only get the objects from the main tracked remote " +
+		" repository.\n" +
+		"Additional arguments are forwarded to the invocation of" +
+		" `git fetch`, except the help flag.",
 	// TODO: disable parsing of additional arguments
 	// Could be done with fetchCmd.Flags().SetInterspersed(false)
 	DisableFlagParsing: true, // Forward the options as flags to the following fetches

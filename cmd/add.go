@@ -13,8 +13,9 @@ func init() {
 
 var addCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add directories to the storage.",
-	Long:  "Add each given directory to the storage file.",
+	Short: "Add directories to the storage",
+	Long: "Add directories to the storage file by appending one or more\n" +
+		"paths to a git directory as an argument.",
 	Run: func(cmd *cobra.Command, args []string) {
 		i, _ := cmd.Flags().GetString("index")
 		r := repo.CurrentRegister(i)
