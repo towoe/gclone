@@ -274,13 +274,17 @@ func (r *Register) setStatus() {
 			status <- old
 		}(k, v, res)
 	}
+	// TODO Use a progress bar or similar info for progress
+	fmt.Print("Getting the statuses ")
 	for range r.Repos {
 		v1, ok := <-res
+		fmt.Print(".")
 		if !ok {
 			break
 		}
 		r.Repos[v1.dirName] = v1
 	}
+	fmt.Println()
 }
 
 // iterate over all entries and just create a dumb slice
