@@ -211,17 +211,19 @@ func (r *Register) updateRemotestatus() {
 	}
 }
 
-type ListSort int
+// List prints all the entries from the storage file
+func (r *Register) List() {
+	for _, dir := range sortedKeysContent(&r.Repos) {
+		fmt.Println(substituteWithTilde(dir))
+	}
+}
 
-const (
-	Directory ListSort = iota
-	Remote
-)
-
-func (r *Register) List(s string) {
+// Status gathers the state for each entry and prints the status in a list
+// sorted by the specified argument
+func (r *Register) Status(sort string) {
 	r.setStatus()
 	r.updateRemotestatus()
-	if s == "remote" {
+	if sort == "remote" {
 		r.listByRemotes()
 	} else {
 		r.listByDirs()
