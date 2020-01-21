@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/towoe/gclone/git"
 )
 
@@ -274,17 +275,17 @@ func (r *Register) setStatus() {
 			status <- old
 		}(k, v, res)
 	}
-	// TODO Use a progress bar or similar info for progress
-	fmt.Print("Getting the statuses ")
+	bar := pb.StartNew(len(r.Repos))
+	bar.SetTemplate(`Collecting statuses: {{counters . }}`)
 	for range r.Repos {
 		v1, ok := <-res
-		fmt.Print(".")
+		bar.Increment()
 		if !ok {
 			break
 		}
 		r.Repos[v1.dirName] = v1
 	}
-	fmt.Println()
+	bar.Finish()
 }
 
 // iterate over all entries and just create a dumb slice
