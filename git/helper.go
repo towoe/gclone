@@ -28,9 +28,20 @@ const (
 
 func (rp RepoStatus) String() string {
 	if rp == Clean {
-		return "\033[32mClean\033[0m"
+		return "Clean"
 	} else if rp == Dirty {
-		return "\033[31mDirty\033[0m"
+		//return "Dirty\033[0m"
+		return "Dirty"
+	} else {
+		return ""
+	}
+}
+
+func (rp RepoStatus) Color() string {
+	if rp == Clean {
+		return "\033[32m"
+	} else if rp == Dirty {
+		return "\033[31m"
 	} else {
 		return ""
 	}

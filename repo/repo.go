@@ -13,12 +13,15 @@ import (
 	"github.com/towoe/gclone/git"
 )
 
+// remote is the data structure for a remote entry of a repository.
+// A repository can have multiple remotes.
 type remote struct {
 	name   string
 	url    string
 	status git.RepoRemoteDiff
 }
 
+// directoryContent contains all the information for a single repository
 type directoryContent struct {
 	valid   bool
 	status  git.RepoStatus
@@ -26,6 +29,7 @@ type directoryContent struct {
 	dirName string
 }
 
+// Register stores a map of all registered repositories
 type Register struct {
 	Repos map[string]directoryContent
 }
@@ -69,16 +73,17 @@ func CurrentRegister(storageFile string) *Register {
 }
 
 // LoadRemotes looks up the currently available remotes of a repository
-// (direcotry) and adds them to the Register
+// (directory) and adds them to the Register
 func (r *Register) LoadRemotes() {
-	for k := range r.Repos {
-		d, err := getRemotes(k)
+	for directory := range r.Repos {
+		content, err := getRemotes(directory)
 		if err == ErrNotAGitDir {
-			log.Println("Error checking for remotes.", err, k)
+			log.Println("Error checking for remotes.",
+				err, directory)
 		} else if err != nil {
 			log.Fatalln(err)
 		}
-		r.Repos[k] = d
+		r.Repos[directory] = content
 	}
 }
 
@@ -181,7 +186,8 @@ const (
 
 // RemoveInvalidEntries remove entries which are not marked valid from the
 // storage
-func (r *Register) RemoveInvalidEntries(m DeleteMethod) {
+func (r *Register) RemoveInvalidEntries(m DeleteMethod) bool {
+	var removed bool
 	for k, v := range r.Repos {
 		if !v.valid {
 			if m == DeleteAsk {
@@ -197,116 +203,10 @@ func (r *Register) RemoveInvalidEntries(m DeleteMethod) {
 				}
 			}
 			r.remove(k)
+			removed = true
 		}
 	}
-}
-
-func (r *Register) updateRemotestatus() {
-	for k, v := range r.Repos {
-		if v.valid {
-			for n, remote := range v.remotes {
-				r.Repos[k].remotes[n].status =
-					git.StatusRemote(v.dirName, remote.name)
-			}
-		}
-	}
-}
-
-// List prints all the entries from the storage file
-func (r *Register) List() {
-	for _, dir := range sortedKeysContent(&r.Repos) {
-		fmt.Println(substituteWithTilde(dir))
-	}
-}
-
-// Status gathers the state for each entry and prints the status in a list
-// sorted by the specified argument
-func (r *Register) Status(sort string) {
-	r.setStatus()
-	r.updateRemotestatus()
-	var l []statusLine
-	if sort == "remote" {
-		l = r.listByRemotes()
-	} else {
-		l = r.listByDirs()
-	}
-	l = insertSpacer(l)
-	printLines(l)
-}
-
-// statusLine stores the status for each entry.
-// The purpose for this is to have the ability to change the text
-// which is printed as an output. An example for this would be to
-// insert spaces in order to align the second entries.
-type statusLine struct {
-	first  string
-	second string
-	thrid  string
-}
-
-func printLines(s []statusLine) {
-	for _, v := range s {
-		fmt.Printf("%v %v %v\n", v.first, v.second, v.thrid)
-	}
-}
-
-func insertSpacer(s []statusLine) []statusLine {
-	var maxLen int
-	for _, v := range s {
-		if entryLen := len(v.first); entryLen > maxLen {
-			maxLen = entryLen
-		}
-	}
-	for i, v := range s {
-		fillSpaceLen := maxLen - len(v.first)
-		t := v.first
-		for f := 0; f < fillSpaceLen; f++ {
-			t += " "
-		}
-		s[i].first = t
-	}
-	return s
-}
-
-func (r *Register) listByDirs() []statusLine {
-	sList := make([]statusLine, 0)
-	for _, dir := range sortedKeysContent(&r.Repos) {
-		dirContent := r.Repos[dir]
-		sEntry := statusLine{}
-		if dirContent.valid {
-			sEntry.first = fmt.Sprintf("%s:", substituteWithTilde(dir))
-			sEntry.second = fmt.Sprintf("%s", dirContent.status)
-			for k, remote := range dirContent.remotes {
-				rem := fmt.Sprintf("%s: %s",
-					remote.name, remote.status)
-				if k < len(dirContent.remotes)-1 {
-					rem += fmt.Sprintf(", ")
-				}
-				sEntry.thrid += rem
-			}
-			if len(dirContent.remotes) == 0 {
-				sEntry.thrid = fmt.Sprint("none set")
-			}
-			sList = append(sList, sEntry)
-		}
-	}
-	return sList
-}
-
-func (r *Register) listByRemotes() []statusLine {
-	sList := make([]statusLine, 0)
-	m := r.mapRemotes()
-	for _, url := range sortedKeysString(&m) {
-		sEntry := statusLine{}
-		dirCont := m[url]
-		sEntry.first = fmt.Sprintf("%s:", url)
-		for _, d := range dirCont {
-			sEntry.second = fmt.Sprintf("%s:", substituteWithTilde(d.dirName))
-			sEntry.thrid = fmt.Sprintf("%s", d.status)
-		}
-		sList = append(sList, sEntry)
-	}
-	return sList
+	return removed
 }
 
 func (r *Register) setStatus() {
@@ -335,28 +235,165 @@ func (r *Register) setStatus() {
 	bar.Finish()
 }
 
-// iterate over all entries and just create a dumb slice
-func (r *Register) mapRemotes() map[string][]directoryContent {
-	rem := make(map[string][]directoryContent)
-	for _, dirCont := range r.Repos {
-		for _, remote := range dirCont.remotes {
-			val, ok := rem[remote.url]
-			if !ok {
-				val = make([]directoryContent, 0)
+func (r *Register) updateRemotestatus() {
+	for k, v := range r.Repos {
+		if v.valid {
+			for n, remote := range v.remotes {
+				r.Repos[k].remotes[n].status =
+					git.StatusRemote(v.dirName, remote.name)
 			}
-			rem[remote.url] = append(val, dirCont)
 		}
 	}
-	return rem
 }
 
-func (r *Register) createRemoteList() map[string][]string {
-	// TODO: handle repos without remotes
-	repoList := make(map[string][]string)
-	for d, repo := range r.Repos {
-		for _, remote := range repo.remotes {
-			repoList[remote.url] = append(repoList[remote.url], d)
+// List prints all the entries from the storage file
+func (r *Register) List() {
+	for _, dir := range sortedKeysContent(&r.Repos) {
+		fmt.Println(substituteWithTilde(dir))
+	}
+}
+
+// Status gathers the state for each entry and prints the status in a list
+// sorted by the specified argument
+func (r *Register) Status(key string, sorted string, reverse bool) {
+	r.setStatus()
+	r.updateRemotestatus()
+	var l []statusLine
+	if key == "remote" {
+		l = r.listByRemotes()
+	} else {
+		l = r.listByDirs()
+	}
+	// Sorting by key always happens, so if the status is sorted
+	// the keys are sorted in the status group as well
+	var kk sort.Interface = byKey(l)
+	if reverse {
+		kk = sort.Reverse(byKey(l))
+	}
+	sort.Stable(kk)
+	if sorted == "status" {
+		var ls sort.Interface = byStatus(l)
+		if reverse {
+			ls = sort.Reverse(byStatus(l))
+		}
+		sort.Stable(ls)
+	}
+	removeDuplicateKey(l)
+	alignWithSpace(l)
+	printLines(l)
+}
+
+// statusLine stores the status for each entry.
+// The purpose for this is to have the ability to change the text
+// which is printed as an output. An example for this would be to
+// insert spaces in order to align the second entries.
+type statusLine struct {
+	key         string
+	status      string
+	statusColor string
+	info        string
+}
+
+type byKey []statusLine
+
+func (k byKey) Len() int {
+	return len(k)
+}
+func (k byKey) Swap(i, j int) {
+	k[i], k[j] = k[j], k[i]
+}
+func (k byKey) Less(i, j int) bool {
+	return strings.Compare(k[i].key, k[j].key) == -1
+}
+
+type byStatus []statusLine
+
+func (s byStatus) Len() int {
+	return len(s)
+}
+func (s byStatus) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s byStatus) Less(i, j int) bool {
+	return strings.Compare(s[i].status, s[j].status) == -1
+}
+
+func printLines(s []statusLine) {
+	for _, v := range s {
+		fmt.Printf("%v  %v%v\033[0m  %v\n", v.key, v.statusColor, v.status, v.info)
+	}
+}
+
+// removeDuplicateKey from a list sorted by key
+func removeDuplicateKey(s []statusLine) {
+	for i, v := range s {
+		// Check all previous keys
+		for j := i; j > 0; j-- {
+			if s[j-1].key == "" {
+				// Go back further for comparison
+				continue
+			}
+			if strings.Compare(s[i].key, s[j-1].key) == 0 {
+				// Current key matches one from a previous entry
+				v.key = ""
+				s[i] = v
+			}
 		}
 	}
-	return repoList
+}
+
+func alignWithSpace(s []statusLine) {
+	var maxLenK, maxLenS int
+	for i := range s {
+		if entryLen := len(s[i].status); entryLen > maxLenS {
+			maxLenS = entryLen
+		}
+		if entryLen := len(s[i].key); entryLen > maxLenK {
+			maxLenK = entryLen
+		}
+	}
+	for i := range s {
+		s[i].key += strings.Repeat(" ", maxLenK-len(s[i].key))
+		s[i].status += strings.Repeat(" ", maxLenS-len(s[i].status))
+	}
+}
+
+func (r *Register) listByDirs() []statusLine {
+	sList := make([]statusLine, 0, 10)
+	for k, dirContent := range r.Repos {
+		sEntry := statusLine{}
+		if dirContent.valid {
+			sEntry.key = fmt.Sprintf("%s:", substituteWithTilde(k))
+			sEntry.status = dirContent.status.String()
+			sEntry.statusColor = dirContent.status.Color()
+			for k, remote := range dirContent.remotes {
+				rem := fmt.Sprintf("%s: %s",
+					remote.name, remote.status)
+				if k < len(dirContent.remotes)-1 {
+					rem += fmt.Sprintf(", ")
+				}
+				sEntry.info += rem
+			}
+			if len(dirContent.remotes) == 0 {
+				sEntry.info = fmt.Sprint("none set")
+			}
+			sList = append(sList, sEntry)
+		}
+	}
+	return sList
+}
+
+func (r *Register) listByRemotes() []statusLine {
+	sList := make([]statusLine, 0)
+	for directory, dirContent := range r.Repos {
+		for _, remote := range dirContent.remotes {
+			sEntry := statusLine{}
+			sEntry.key = remote.url
+			sEntry.status = dirContent.status.String()
+			sEntry.statusColor = dirContent.status.Color()
+			sEntry.info = substituteWithTilde(directory)
+			sList = append(sList, sEntry)
+		}
+	}
+	return sList
 }

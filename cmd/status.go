@@ -19,14 +19,19 @@ var statusCmd = &cobra.Command{
 
 func init() {
 	statusCmd.Flags().StringP("list", "l", "dir", "List the output based on [dir]ectory or [remote]")
+	statusCmd.Flags().StringP("sort", "s", "key", "Sort the output by [key] or [status]")
+	statusCmd.Flags().BoolP("reverse", "r", false, "Reverse the order of sorting")
 }
 
 func status(cmd *cobra.Command, args []string) {
 	i, _ := cmd.Flags().GetString("index")
 	r := repo.CurrentRegister(i)
 	r.LoadRemotes()
-	l, _ := cmd.Flags().GetString("list")
-	r.Status(l)
-	r.RemoveInvalidEntries(repo.DeleteAsk)
-	r.Store()
+	list, _ := cmd.Flags().GetString("list")
+	sorted, _ := cmd.Flags().GetString("sort")
+	reverse, _ := cmd.Flags().GetBool("reverse")
+	r.Status(list, sorted, reverse)
+	if r.RemoveInvalidEntries(repo.DeleteAsk) {
+		r.Store()
+	}
 }
