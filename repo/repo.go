@@ -224,42 +224,89 @@ func (r *Register) List() {
 func (r *Register) Status(sort string) {
 	r.setStatus()
 	r.updateRemotestatus()
+	var l []statusLine
 	if sort == "remote" {
-		r.listByRemotes()
+		l = r.listByRemotes()
 	} else {
-		r.listByDirs()
+		l = r.listByDirs()
+	}
+	l = insertSpacer(l)
+	printLines(l)
+}
+
+// statusLine stores the status for each entry.
+// The purpose for this is to have the ability to change the text
+// which is printed as an output. An example for this would be to
+// insert spaces in order to align the second entries.
+type statusLine struct {
+	first  string
+	second string
+	thrid  string
+}
+
+func printLines(s []statusLine) {
+	for _, v := range s {
+		fmt.Printf("%v %v %v\n", v.first, v.second, v.thrid)
 	}
 }
 
-func (r *Register) listByDirs() {
+func insertSpacer(s []statusLine) []statusLine {
+	var maxLen int
+	for _, v := range s {
+		if entryLen := len(v.first); entryLen > maxLen {
+			maxLen = entryLen
+		}
+	}
+	for i, v := range s {
+		fillSpaceLen := maxLen - len(v.first)
+		t := v.first
+		for f := 0; f < fillSpaceLen; f++ {
+			t += " "
+		}
+		s[i].first = t
+	}
+	return s
+}
+
+func (r *Register) listByDirs() []statusLine {
+	sList := make([]statusLine, 0)
 	for _, dir := range sortedKeysContent(&r.Repos) {
 		dirContent := r.Repos[dir]
+		sEntry := statusLine{}
 		if dirContent.valid {
-			fmt.Printf("%s: %s\tRemotes: ", substituteWithTilde(dir), dirContent.status)
+			sEntry.first = fmt.Sprintf("%s:", substituteWithTilde(dir))
+			sEntry.second = fmt.Sprintf("%s", dirContent.status)
 			for k, remote := range dirContent.remotes {
-				fmt.Printf("%s: %s",
+				rem := fmt.Sprintf("%s: %s",
 					remote.name, remote.status)
 				if k < len(dirContent.remotes)-1 {
-					fmt.Printf(", ")
+					rem += fmt.Sprintf(", ")
 				}
+				sEntry.thrid += rem
 			}
 			if len(dirContent.remotes) == 0 {
-				fmt.Print("none set")
+				sEntry.thrid = fmt.Sprint("none set")
 			}
-			fmt.Println()
+			sList = append(sList, sEntry)
 		}
 	}
+	return sList
 }
 
-func (r *Register) listByRemotes() {
+func (r *Register) listByRemotes() []statusLine {
+	sList := make([]statusLine, 0)
 	m := r.mapRemotes()
 	for _, url := range sortedKeysString(&m) {
+		sEntry := statusLine{}
 		dirCont := m[url]
-		fmt.Printf("%s:\t", url)
+		sEntry.first = fmt.Sprintf("%s:", url)
 		for _, d := range dirCont {
-			fmt.Printf("%s: %s\n", substituteWithTilde(d.dirName), d.status)
+			sEntry.second = fmt.Sprintf("%s:", substituteWithTilde(d.dirName))
+			sEntry.thrid = fmt.Sprintf("%s", d.status)
 		}
+		sList = append(sList, sEntry)
 	}
+	return sList
 }
 
 func (r *Register) setStatus() {
