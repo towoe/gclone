@@ -124,7 +124,7 @@ func (r *Register) remove(gitDir string) {
 func (r *Register) Fetch(options string) error {
 	for k := range r.Repos {
 		func(k string, options string) {
-			fmt.Println("Fetching: ", k)
+			fmt.Printf("\033[36mFetching: %v\033[m\n", k)
 			c := git.NewFetch(k, options)
 			c.Run()
 		}(k, options)
