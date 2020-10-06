@@ -113,3 +113,43 @@ func StatusRemote(directory string, remote string) RepoRemoteDiff {
 		return Changed
 	}
 }
+
+type RepoStatus int
+
+const (
+	Undefined RepoStatus = iota + 1
+	Clean
+	Dirty
+)
+
+func (rp RepoStatus) String() string {
+	if rp == Clean {
+		return "Clean"
+	} else if rp == Dirty {
+		//return "Dirty\033[0m"
+		return "Dirty"
+	} else {
+		return ""
+	}
+}
+
+func (rp RepoStatus) Color() string {
+	if rp == Clean {
+		return "\033[32m"
+	} else if rp == Dirty {
+		return "\033[31m"
+	} else {
+		return ""
+	}
+}
+
+func Status(directory string) (RepoStatus, error) {
+	g := NewGit().SetArgs("--no-optional-locks", "status", "--porcelain=v1")
+	g.Dir = directory
+	s, _ := g.Output()
+	if len(s) == 0 {
+		return Clean, nil
+	} else {
+		return Dirty, nil
+	}
+}
