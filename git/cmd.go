@@ -76,8 +76,14 @@ func NewFetch(directory string, options string) *Cmd {
 	return g
 }
 
-func NewRevListCount(directory string, remote string) *Cmd {
-	g := NewGit().SetArgs("rev-list", "--count", remote+"/master...")
+func NewCurrentBranch(directory string) *Cmd {
+	g := NewGit().SetArgs("branch", "--show-current")
+	g.Dir = directory
+	return g
+}
+
+func NewRevListCount(directory string, remote string, branch string) *Cmd {
+	g := NewGit().SetArgs("rev-list", "--count", remote+"/"+branch+"...")
 	g.Dir = directory
 	return g
 }
@@ -106,7 +112,9 @@ func (rr RepoRemoteDiff) String() string {
 }
 
 func StatusRemote(directory string, remote string) RepoRemoteDiff {
-	rev, _ := NewRevListCount(directory, remote).Output()
+	branch, _ := NewCurrentBranch(directory).Output()
+	branch_name := strings.Trim(string(branch), "\n")
+	rev, _ := NewRevListCount(directory, remote, string(branch_name)).Output()
 	if strings.HasPrefix(string(rev), "0") {
 		return UpToDate
 	} else {
